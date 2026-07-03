@@ -1,0 +1,5 @@
+data/history.db
+data/latest.json
+data/fft_latest.json
+*.key
+*.crt
