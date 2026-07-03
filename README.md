@@ -4,6 +4,8 @@ A PHP/Python monitoring dashboard for the IIoT servo maintenance system. Built f
 
 The dashboard connects directly to the ESP32, polls live data every second, and serves a browser-based dashboard with real-time data updates, fault history, FFT visualisation, and a variety of other features.
 
+> If you do not want to clone this repository, skip Step 1, create each file and copy and paste all the code yourself. You can follow the manual instructions inside my Maintenance Guide.
+
 ## Prerequisites
 
 - PHP 8.x with `php-cli` and `php-sqlite3`
@@ -52,5 +54,3 @@ php -S 0.0.0.0:8000
 ```
 
 6. Visit `http://localhost:8000` and log in.
-
-> If you do not want to clone this repository, skip Step 1, create each file and copy and paste all the code yourself.
