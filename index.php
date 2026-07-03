@@ -4,8 +4,10 @@ requireAuth();
 $db = new SQLite3(DB_PATH);
 $db->busyTimeout(5000);
 $latest = json_decode(file_get_contents(LATEST_JSON), true);
-$faultCount = $db->querySingle("SELECT COUNT(*) FROM readings WHERE fault_code != 0");
-$recentFaults = $db->query("SELECT timestamp, fault_code FROM readings WHERE fault_code != 0 ORDER BY timestamp DESC LIMIT 10");
+
+$faultCount = $db->querySingle("SELECT COUNT(*) FROM (SELECT fault_code, LAG(fault_code) OVER (ORDER BY timestamp) AS prev_code FROM readings) WHERE fault_code != 0 AND (prev_code IS NULL OR prev_code != fault_code)");
+$recentFaults = $db->query("WITH lagged AS (SELECT timestamp, fault_code, LAG(fault_code) OVER (ORDER BY timestamp) AS prev_code FROM readings) SELECT timestamp, fault_code FROM lagged WHERE fault_code != 0 AND (prev_code IS NULL OR prev_code != fault_code) ORDER BY timestamp DESC LIMIT 10");
+
 $fftFile = FFT_JSON;
 $fftData = file_exists($fftFile) ? json_decode(file_get_contents($fftFile), true) : null;
 $faultActive = $latest['fault_latched'] ?? false;
