@@ -122,7 +122,7 @@ if ($meta['dbColumn'] !== null) {
         $historyData = $rows;
         if (count($rows) > 0) {
             $values = array_map(function ($r) use ($col) {
-                return (float)$r[$col];
+                return (float) $r[$col];
             }, $rows);
             $statsMin = min($values);
             $statsMax = max($values);
@@ -136,367 +136,500 @@ if ($meta['dbColumn'] !== null) {
 $metricName = htmlspecialchars($meta['name'], ENT_QUOTES, 'UTF-8');
 $metricUnit = htmlspecialchars($meta['unit'], ENT_QUOTES, 'UTF-8');
 $metricDesc = htmlspecialchars($meta['description'], ENT_QUOTES, 'UTF-8');
-$displayValue = htmlspecialchars((string)$currentValue, ENT_QUOTES, 'UTF-8');
+$displayValue = htmlspecialchars((string) $currentValue, ENT_QUOTES, 'UTF-8');
 $metricCssVar = $meta['cssVar'];
 $metricIcon = $meta['icon'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="<?= $metricName ?> — detailed view and history for the IIoT monitoring dashboard.">
-<title><?= $metricName ?> — Dashboard</title>
-<script>
-(function(){
-    var t = localStorage.getItem('dashboard-theme');
-    var s = localStorage.getItem('dashboard-textsize');
-    if(t) document.documentElement.setAttribute('data-theme', t);
-    if(s) document.documentElement.setAttribute('data-size', s);
-})();
-</script>
-<?php if (count($historyData) > 0): ?>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-<?php endif; ?>
-<style>
-:root {
-    --bg: #f2f2f7; --card: #ffffff; --sep-inset: rgba(60,60,67,0.12);
-    --ink: #1c1c1e; --ink-2: #3a3a3c; --ink-3: #8e8e93;
-    --blue: #007AFF; --orange: #FF9500; --purple: #AF52DE; --teal: #5AC8FA;
-    --indigo: #5856D6; --red: #FF3B30; --green: #34C759; --r: 12px;
-}
-html[data-theme='dark'] {
-    --bg: #000000; --card: #1c1c1e; --sep-inset: rgba(255,255,255,0.08);
-    --ink: #f2f2f7; --ink-2: #d1d1d6; --ink-3: #98989f;
-    --blue: #0A84FF; --orange: #FF9F0A; --purple: #BF5AF2; --teal: #64D2FF;
-    --indigo: #5E5CE6; --red: #FF453A; --green: #30D158;
-}
-html[data-size='sm'] h1 { font-size: 24px; }
-html[data-size='sm'] .value-main { font-size: 44px; }
-html[data-size='sm'] .value-unit { font-size: 20px; }
-html[data-size='sm'] .metric-unit-sub { font-size: 13px; }
-html[data-size='sm'] .card-title { font-size: 14px; }
-html[data-size='lg'] h1 { font-size: 34px; }
-html[data-size='lg'] .value-main { font-size: 68px; }
-html[data-size='lg'] .value-unit { font-size: 28px; }
-html[data-size='lg'] .metric-unit-sub { font-size: 17px; }
-html[data-size='lg'] .card-title { font-size: 18px; }
-*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--ink);
-    min-height: 100vh;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-.container {
-    max-width: 640px;
-    margin: 0 auto;
-    padding: 20px 16px 40px;
-}
-.back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--blue);
-    text-decoration: none;
-    margin-bottom: 24px;
-    transition: opacity 0.15s ease;
-}
-.back-link:hover { opacity: 0.7; }
-.metric-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 4px;
-}
-.metric-header .icon-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: color-mix(in srgb, var(<?= $metricCssVar ?>) 15%, transparent);
-    color: var(<?= $metricCssVar ?>);
-    flex-shrink: 0;
-}
-.metric-header h1 {
-    font-size: 28px;
-    font-weight: 700;
-    line-height: 1.2;
-}
-.metric-unit-sub {
-    font-size: 15px;
-    color: var(--ink-3);
-    margin-bottom: 20px;
-    padding-left: 52px;
-}
-.card {
-    background: var(--card);
-    border-radius: var(--r);
-    margin-bottom: 16px;
-    overflow: hidden;
-    transition: background 0.2s ease;
-}
-.card-head {
-    padding: 14px 18px 0;
-}
-.card-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--ink);
-}
-.card-subtitle {
-    font-size: 13px;
-    color: var(--ink-3);
-    margin-top: 2px;
-}
-.value-card-body {
-    padding: 24px 18px 20px;
-    text-align: center;
-}
-.value-row {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    gap: 8px;
-}
-.value-main {
-    font-size: 56px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    color: var(<?= $metricCssVar ?>);
-    line-height: 1;
-    transition: color 0.2s ease;
-}
-.value-unit {
-    font-size: 24px;
-    color: var(--ink-3);
-    font-weight: 400;
-}
-.value-label {
-    font-size: 13px;
-    color: var(--ink-3);
-    margin-top: 8px;
-}
-.chart-wrap {
-    padding: 12px 18px 18px;
-}
-.chart-wrap canvas {
-    width: 100% !important;
-    height: 220px !important;
-}
-.list-group {
-    padding: 0;
-}
-.list-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 18px;
-    border-bottom: 1px solid var(--sep-inset);
-}
-.list-row:last-child { border-bottom: none; }
-.list-label {
-    font-size: 15px;
-    color: var(--ink);
-}
-.list-value {
-    font-size: 15px;
-    color: var(--ink-3);
-    font-variant-numeric: tabular-nums;
-}
-.about-text {
-    font-size: 15px;
-    color: var(--ink-2);
-    line-height: 1.6;
-    padding: 14px 18px 18px;
-}
-:focus-visible {
-    outline: 3px solid var(--blue);
-    outline-offset: 2px;
-}
-@media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-}
-</style>
-</head>
-<body>
-<div class="container">
-    <a href="index.php" class="back-link">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2L4 8l6 6"/></svg>
-        Dashboard
-    </a>
-    <div class="metric-header">
-        <div class="icon-wrap"><?= $metricIcon ?></div>
-        <h1><?= $metricName ?></h1>
-    </div>
-    <?php if ($metricUnit !== ''): ?>
-    <div class="metric-unit-sub">Unit: <?= $metricUnit ?></div>
-    <?php else: ?>
-    <div class="metric-unit-sub">&nbsp;</div>
-    <?php endif; ?>
-    <div class="card">
-        <div class="value-card-body">
-            <div class="value-row">
-                <span class="value-main" id="currentValue"><?= $displayValue ?></span>
-                <?php if ($metricUnit !== ''): ?>
-                <span class="value-unit"><?= $metricUnit ?></span>
-                <?php endif; ?>
-            </div>
-            <div class="value-label">Current reading</div>
-        </div>
-    </div>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="<?= $metricName ?> — detailed view and history for the IIoT monitoring dashboard.">
+    <title><?= $metricName ?> — Dashboard</title>
+    <script>
+        (function () {
+            var t = localStorage.getItem('dashboard-theme');
+            var s = localStorage.getItem('dashboard-textsize');
+            if (t) document.documentElement.setAttribute('data-theme', t);
+            if (s) document.documentElement.setAttribute('data-size', s);
+        })();
+    </script>
     <?php if (count($historyData) > 0): ?>
-    <div class="card">
-        <div class="card-head">
-            <div class="card-title">History</div>
-            <div class="card-subtitle">Last <?= $statsCount ?> readings</div>
-        </div>
-        <div class="chart-wrap">
-            <canvas id="historyChart"></canvas>
-        </div>
-    </div>
-    <div class="card">
-        <div class="card-head">
-            <div class="card-title">Statistics</div>
-        </div>
-        <div class="list-group">
-            <div class="list-row">
-                <span class="list-label">Minimum</span>
-                <span class="list-value"><?= htmlspecialchars($statsMin, ENT_QUOTES, 'UTF-8') ?> <?= $metricUnit ?></span>
-            </div>
-            <div class="list-row">
-                <span class="list-label">Maximum</span>
-                <span class="list-value"><?= htmlspecialchars($statsMax, ENT_QUOTES, 'UTF-8') ?> <?= $metricUnit ?></span>
-            </div>
-            <div class="list-row">
-                <span class="list-label">Average</span>
-                <span class="list-value"><?= htmlspecialchars($statsAvg, ENT_QUOTES, 'UTF-8') ?> <?= $metricUnit ?></span>
-            </div>
-            <div class="list-row">
-                <span class="list-label">Data Points</span>
-                <span class="list-value"><?= $statsCount ?></span>
-            </div>
-        </div>
-    </div>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
     <?php endif; ?>
-    <div class="card">
-        <div class="card-head">
-            <div class="card-title">About This Metric</div>
-        </div>
-        <div class="about-text"><?= $metricDesc ?></div>
-    </div>
-</div>
-<script>
-var metricKey = '<?= $metric ?>';
-function poll() {
-    fetch('api.php')
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-            var el = document.getElementById('currentValue');
-            if (!el) return;
-            if (metricKey === 'service_due') {
-                el.textContent = d.service_due ? 'Yes' : 'No';
-            } else if (d[metricKey] !== undefined) {
-                el.textContent = d[metricKey];
-            }
-        })
-        .catch(function() {});
-}
-setInterval(poll, 2000);
-<?php if (count($historyData) > 0): ?>
-(function() {
-    var labels = <?= json_encode(array_map(function($r) {
-        return date('H:i:s', strtotime($r['timestamp']));
-    }, $historyData), JSON_UNESCAPED_UNICODE) ?>;
-    var values = <?= json_encode(array_map(function($r) use ($meta) {
-        return (float)$r[$meta['dbColumn']];
-    }, $historyData)) ?>;
-    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    var accentColor = isDark ? '<?= $meta['colorDark'] ?>' : '<?= $meta['colorLight'] ?>';
-    var gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-    var tickColor = isDark ? '#98989f' : '#8e8e93';
-    var tooltipBg = isDark ? '#2c2c2e' : '#ffffff';
-    var tooltipText = isDark ? '#f2f2f7' : '#1c1c1e';
-    var tooltipBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-    var ctx = document.getElementById('historyChart').getContext('2d');
-    var gradient = ctx.createLinearGradient(0, 0, 0, 220);
-    gradient.addColorStop(0, accentColor + '33');
-    gradient.addColorStop(1, accentColor + '00');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: values,
-                borderColor: accentColor,
-                backgroundColor: gradient,
-                borderWidth: 2,
-                fill: true,
-                tension: 0.3,
-                pointRadius: 0,
-                pointHoverRadius: 5,
-                pointHoverBackgroundColor: accentColor,
-                pointHoverBorderColor: tooltipBg,
-                pointHoverBorderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: tooltipBg,
-                    titleColor: tooltipText,
-                    bodyColor: tooltipText,
-                    borderColor: tooltipBorder,
-                    borderWidth: 1,
-                    cornerRadius: 8,
-                    padding: 10,
-                    displayColors: false,
-                    callbacks: {
-                        label: function(context) {
-                            return context.parsed.y + ' <?= addslashes($metricUnit) ?>';
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    grid: { color: gridColor, drawBorder: false },
-                    ticks: {
-                        color: tickColor,
-                        font: { size: 11 },
-                        maxRotation: 0,
-                        maxTicksLimit: 6
-                    }
-                },
-                y: {
-                    grid: { color: gridColor, drawBorder: false },
-                    ticks: {
-                        color: tickColor,
-                        font: { size: 11 }
-                    }
-                }
+    <style>
+        :root {
+            --bg: #f2f2f7;
+            --card: #ffffff;
+            --sep-inset: rgba(60, 60, 67, 0.12);
+            --ink: #1c1c1e;
+            --ink-2: #3a3a3c;
+            --ink-3: #8e8e93;
+            --blue: #007AFF;
+            --orange: #FF9500;
+            --purple: #AF52DE;
+            --teal: #5AC8FA;
+            --indigo: #5856D6;
+            --red: #FF3B30;
+            --green: #34C759;
+            --r: 12px;
+        }
+
+        html[data-theme='dark'] {
+            --bg: #000000;
+            --card: #1c1c1e;
+            --sep-inset: rgba(255, 255, 255, 0.08);
+            --ink: #f2f2f7;
+            --ink-2: #d1d1d6;
+            --ink-3: #98989f;
+            --blue: #0A84FF;
+            --orange: #FF9F0A;
+            --purple: #BF5AF2;
+            --teal: #64D2FF;
+            --indigo: #5E5CE6;
+            --red: #FF453A;
+            --green: #30D158;
+        }
+
+        html[data-size='sm'] h1 {
+            font-size: 24px;
+        }
+
+        html[data-size='sm'] .value-main {
+            font-size: 44px;
+        }
+
+        html[data-size='sm'] .value-unit {
+            font-size: 20px;
+        }
+
+        html[data-size='sm'] .metric-unit-sub {
+            font-size: 13px;
+        }
+
+        html[data-size='sm'] .card-title {
+            font-size: 14px;
+        }
+
+        html[data-size='lg'] h1 {
+            font-size: 34px;
+        }
+
+        html[data-size='lg'] .value-main {
+            font-size: 68px;
+        }
+
+        html[data-size='lg'] .value-unit {
+            font-size: 28px;
+        }
+
+        html[data-size='lg'] .metric-unit-sub {
+            font-size: 17px;
+        }
+
+        html[data-size='lg'] .card-title {
+            font-size: 18px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 20px 16px 40px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--blue);
+            text-decoration: none;
+            margin-bottom: 24px;
+            transition: opacity 0.15s ease;
+        }
+
+        .back-link:hover {
+            opacity: 0.7;
+        }
+
+        .metric-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 4px;
+        }
+
+        .metric-header .icon-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: color-mix(in srgb, var(<?= $metricCssVar ?>) 15%, transparent);
+            color: var(<?= $metricCssVar ?>);
+            flex-shrink: 0;
+        }
+
+        .metric-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .metric-unit-sub {
+            font-size: 15px;
+            color: var(--ink-3);
+            margin-bottom: 20px;
+            padding-left: 52px;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: var(--r);
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: background 0.2s ease;
+        }
+
+        .card-head {
+            padding: 14px 18px 0;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .card-subtitle {
+            font-size: 13px;
+            color: var(--ink-3);
+            margin-top: 2px;
+        }
+
+        .value-card-body {
+            padding: 24px 18px 20px;
+            text-align: center;
+        }
+
+        .value-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .value-main {
+            font-size: 56px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(<?= $metricCssVar ?>);
+            line-height: 1;
+            transition: color 0.2s ease;
+        }
+
+        .value-unit {
+            font-size: 24px;
+            color: var(--ink-3);
+            font-weight: 400;
+        }
+
+        .value-label {
+            font-size: 13px;
+            color: var(--ink-3);
+            margin-top: 8px;
+        }
+
+        .chart-wrap {
+            padding: 12px 18px 18px;
+        }
+
+        .chart-wrap canvas {
+            width: 100% !important;
+            height: 220px !important;
+        }
+
+        .list-group {
+            padding: 0;
+        }
+
+        .list-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--sep-inset);
+        }
+
+        .list-row:last-child {
+            border-bottom: none;
+        }
+
+        .list-label {
+            font-size: 15px;
+            color: var(--ink);
+        }
+
+        .list-value {
+            font-size: 15px;
+            color: var(--ink-3);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .about-text {
+            font-size: 15px;
+            color: var(--ink-2);
+            line-height: 1.6;
+            padding: 14px 18px 18px;
+        }
+
+        :focus-visible {
+            outline: 3px solid var(--blue);
+            outline-offset: 2px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
-    });
-})();
-<?php endif; ?>
-</script>
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a href="index.php" class="back-link">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 2L4 8l6 6" />
+            </svg>
+            Dashboard
+        </a>
+        <div class="metric-header">
+            <div class="icon-wrap"><?= $metricIcon ?></div>
+            <h1><?= $metricName ?></h1>
+        </div>
+        <?php if ($metricUnit !== ''): ?>
+            <div class="metric-unit-sub">Unit: <?= $metricUnit ?></div>
+        <?php else: ?>
+            <div class="metric-unit-sub">&nbsp;</div>
+        <?php endif; ?>
+        <div class="card">
+            <div class="value-card-body">
+                <div class="value-row">
+                    <span class="value-main" id="currentValue"><?= $displayValue ?></span>
+                    <?php if ($metricUnit !== ''): ?>
+                        <span class="value-unit"><?= $metricUnit ?></span>
+                    <?php endif; ?>
+                </div>
+                <div class="value-label">Current reading</div>
+            </div>
+        </div>
+        <?php if (count($historyData) > 0): ?>
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-title">History</div>
+                    <div class="card-subtitle">Last <?= $statsCount ?> readings</div>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="historyChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-title">Statistics</div>
+                </div>
+                <div class="list-group">
+                    <div class="list-row">
+                        <span class="list-label">Minimum</span>
+                        <span class="list-value" id="stat-min"><?= htmlspecialchars($statsMin, ENT_QUOTES, 'UTF-8') ?>
+                            <?= $metricUnit ?></span>
+                    </div>
+                    <div class="list-row">
+                        <span class="list-label">Maximum</span>
+                        <span class="list-value" id="stat-max"><?= htmlspecialchars($statsMax, ENT_QUOTES, 'UTF-8') ?>
+                            <?= $metricUnit ?></span>
+                    </div>
+                    <div class="list-row">
+                        <span class="list-label">Average</span>
+                        <span class="list-value" id="stat-avg"><?= htmlspecialchars($statsAvg, ENT_QUOTES, 'UTF-8') ?>
+                            <?= $metricUnit ?></span>
+                    </div>
+                    <div class="list-row">
+                        <span class="list-label">Data Points</span>
+                        <span class="list-value" id="stat-count"><?= $statsCount ?></span>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+        <div class="card">
+            <div class="card-head">
+                <div class="card-title">About This Metric</div>
+            </div>
+            <div class="about-text"><?= $metricDesc ?></div>
+        </div>
+    </div>
+    <script>
+        var metricKey = <?= json_encode($metric) ?>;
+        function poll() {
+            fetch('api.php')
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    var el = document.getElementById('currentValue');
+                    if (!el) return;
+                    var val = d[metricKey];
+                    if (metricKey === 'service_due') {
+                        el.textContent = d.service_due ? 'Yes' : 'No';
+                    } else if (val !== undefined) {
+                        el.textContent = val;
+                        if (window.historyChart && window.chartValues) {
+                            var timeStr = new Date(d.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                            var lastLabel = window.historyChart.data.labels[window.historyChart.data.labels.length - 1];
+                            if (lastLabel !== timeStr) {
+                                window.historyChart.data.labels.push(timeStr);
+                                window.historyChart.data.datasets[0].data.push(parseFloat(val));
+                                window.chartValues.push(parseFloat(val));
+                                if (window.historyChart.data.labels.length > 100) {
+                                    window.historyChart.data.labels.shift();
+                                    window.historyChart.data.datasets[0].data.shift();
+                                    window.chartValues.shift();
+                                }
+                                window.historyChart.update();
+
+                                var min = Math.min.apply(null, window.chartValues);
+                                var max = Math.max.apply(null, window.chartValues);
+                                var sum = window.chartValues.reduce(function (a, b) { return a + b; }, 0);
+                                var avg = (sum / window.chartValues.length).toFixed(2);
+
+                                var minEl = document.getElementById('stat-min');
+                                var maxEl = document.getElementById('stat-max');
+                                var avgEl = document.getElementById('stat-avg');
+                                var cntEl = document.getElementById('stat-count');
+
+                                if (minEl) minEl.textContent = min + ' ' + '<?= addslashes($metricUnit) ?>';
+                                if (maxEl) maxEl.textContent = max + ' ' + '<?= addslashes($metricUnit) ?>';
+                                if (avgEl) avgEl.textContent = avg + ' ' + '<?= addslashes($metricUnit) ?>';
+                                if (cntEl) cntEl.textContent = window.chartValues.length;
+                            }
+                        }
+                    }
+                })
+                .catch(function () { });
+        }
+        setInterval(poll, 2000);
+        <?php if (count($historyData) > 0): ?>
+                (function () {
+                    var labels = <?= json_encode(array_map(function($r) {
+                        return date('H:i:s', intval($r['timestamp']));
+                    }, $historyData), JSON_UNESCAPED_UNICODE) ?>;
+                    var values = <?= json_encode(array_map(function ($r) use ($meta) {
+                        return (float) $r[$meta['dbColumn']];
+                    }, $historyData)) ?>;
+                    window.chartValues = values;
+                    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                    var accentColor = isDark ? '<?= $meta['colorDark'] ?>' : '<?= $meta['colorLight'] ?>';
+                    var gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+                    var tickColor = isDark ? '#98989f' : '#8e8e93';
+                    var tooltipBg = isDark ? '#2c2c2e' : '#ffffff';
+                    var tooltipText = isDark ? '#f2f2f7' : '#1c1c1e';
+                    var tooltipBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+                    var ctx = document.getElementById('historyChart').getContext('2d');
+                    var gradient = ctx.createLinearGradient(0, 0, 0, 220);
+                    gradient.addColorStop(0, accentColor + '33');
+                    gradient.addColorStop(1, accentColor + '00');
+                    window.historyChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: values,
+                                borderColor: accentColor,
+                                backgroundColor: gradient,
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.3,
+                                pointRadius: 0,
+                                pointHoverRadius: 5,
+                                pointHoverBackgroundColor: accentColor,
+                                pointHoverBorderColor: tooltipBg,
+                                pointHoverBorderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: tooltipBg,
+                                    titleColor: tooltipText,
+                                    bodyColor: tooltipText,
+                                    borderColor: tooltipBorder,
+                                    borderWidth: 1,
+                                    cornerRadius: 8,
+                                    padding: 10,
+                                    displayColors: false,
+                                    callbacks: {
+                                        label: function (context) {
+                                            return context.parsed.y + ' ' + <?= json_encode($metricUnit) ?>;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: gridColor, drawBorder: false },
+                                    ticks: {
+                                        color: tickColor,
+                                        font: { size: 11 },
+                                        maxRotation: 0,
+                                        maxTicksLimit: 6
+                                    }
+                                },
+                                y: {
+                                    grid: { color: gridColor, drawBorder: false },
+                                    ticks: {
+                                        color: tickColor,
+                                        font: { size: 11 }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })();
+        <?php endif; ?>
+    </script>
 </body>
+
 </html>
